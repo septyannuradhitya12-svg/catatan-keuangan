@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Catatan Keuangan Harian</title>
+<meta name="theme-color" content="#16232D">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Keuangan">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF2F4;--surface:#FFFFFF;--ink:#16232D;--muted:#5F7380;--line:#D9E1E6;
+  --in:#0E8A5F;--in-bg:#DDF3EA;--out:#C23B2A;--out-bg:#FBE4E0;--accent:#16232D;--accent-ink:#FFFFFF;
+  color-scheme:light;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F1A21;--surface:#17252E;--ink:#E8EEF1;--muted:#8FA3AF;--line:#2A3B46;
+  --in:#4CCB9A;--in-bg:#17382F;--out:#F27F6E;--out-bg:#3D2420;--accent:#E8EEF1;--accent-ink:#0F1A21;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1A21;--surface:#17252E;--ink:#E8EEF1;--muted:#8FA3AF;--line:#2A3B46;
+  --in:#4CCB9A;--in-bg:#17382F;--out:#F27F6E;--out-bg:#3D2420;--accent:#E8EEF1;--accent-ink:#0F1A21;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.5 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:640px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+h1{font-size:18px;font-weight:800;margin:0}
+input,select,button{font:inherit;color:inherit}
+.month{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:7px 10px}
+.balance{background:var(--accent);color:var(--accent-ink);border-radius:18px;padding:22px 20px}
+.balance small{opacity:.75;font-size:13px}
+.balance .big{font-size:clamp(30px,9vw,42px);font-weight:800;letter-spacing:-.02em;margin:2px 0 16px;word-break:break-all}
+.split{display:flex;gap:12px}
+.split div{flex:1;border-radius:12px;padding:10px 12px;background:rgba(127,127,127,.18)}
+.split b{display:block;font-size:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:16px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--bg);padding:4px;border-radius:12px;margin-bottom:12px}
+.seg button{border:0;background:none;padding:9px;border-radius:9px;font-weight:700;cursor:pointer;color:var(--muted)}
+.seg button.on.out{background:var(--out);color:#fff}
+.seg button.on.in{background:var(--in);color:#fff}
+:root[data-theme="dark"] .seg button.on,:root:not([data-theme="light"]) .seg button.on{color:#0F1A21}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:10px}
+label input,label select{display:block;width:100%;margin-top:4px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.amount input{font-size:20px;font-weight:700}
+.save{width:100%;border:0;border-radius:12px;padding:12px;font-weight:800;background:var(--accent);color:var(--accent-ink);cursor:pointer}
+:focus-visible{outline:2px solid var(--in);outline-offset:2px}
+.day{margin-top:20px}
+.dayhead{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);font-weight:700;padding:0 4px 6px}
+.item{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:6px}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.item .t{flex:1;min-width:0}
+.item .t b{display:block;font-weight:700}
+.item .t span{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.amt{font-weight:800;white-space:nowrap}
+.del{border:0;background:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px 6px;border-radius:8px}
+.del:hover{color:var(--out)}
+.empty{text-align:center;color:var(--muted);padding:32px 12px}
+.foot{text-align:center;font-size:12px;color:var(--muted);margin-top:28px}
+.foot button{border:0;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:12px}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Catatan Keuangan</h1>
+    <input class="month" type="month" id="month" aria-label="Pilih bulan">
+  </header>
+
+  <section class="balance" aria-live="polite">
+    <small>Saldo bulan ini</small>
+    <div class="big" id="saldo">Rp0</div>
+    <div class="split">
+      <div><small>Pemasukan</small><b id="tin">Rp0</b></div>
+      <div><small>Pengeluaran</small><b id="tout">Rp0</b></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="seg" role="group" aria-label="Jenis transaksi">
+      <button type="button" class="out on" id="bOut">Pengeluaran</button>
+      <button type="button" class="in" id="bIn">Pemasukan</button>
+    </div>
+    <label class="amount">Jumlah (Rp)
+      <input id="amount" inputmode="numeric" placeholder="0" autocomplete="off">
+    </label>
+    <div class="row">
+      <label>Kategori <select id="cat"></select></label>
+      <label>Tanggal <input type="date" id="date"></label>
+    </div>
+    <label>Catatan (opsional) <input id="note" placeholder="Contoh: makan siang warteg" maxlength="80"></label>
+    <button type="button" class="save" id="save">Simpan catatan</button>
+  </section>
+
+  <section id="list"></section>
+
+  <div class="foot">Data tersimpan di perangkat ini. <button type="button" id="reset">Hapus semua data</button></div>
+</main>
+
+<script>
+(function(){
+  var KEY="catatan-keuangan-v1";
+  var CATS={out:["Makan & minum","Transportasi","Belanja","Tagihan","Hiburan","Kesehatan","Lainnya"],
+            in:["Gaji","Bonus","Usaha","Hadiah","Lainnya"]};
+  var type="out", txs=[];
+  var $=function(id){return document.getElementById(id)};
+  var rp=function(n){return "Rp"+Math.abs(n).toLocaleString("id-ID")};
+  var today=function(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+
+  try{var raw=localStorage.getItem(KEY);if(raw)txs=JSON.parse(raw)||[]}catch(e){txs=[]}
+  function persist(){try{localStorage.setItem(KEY,JSON.stringify(txs))}catch(e){}}
+
+  function fillCats(){
+    $("cat").innerHTML=CATS[type].map(function(c){return "<option>"+c.replace(/&/g,"&amp;")+"</option>"}).join("");
+  }
+  function setType(t){
+    type=t;
+    $("bOut").classList.toggle("on",t==="out");
+    $("bIn").classList.toggle("on",t==="in");
+    fillCats();
+  }
+  $("bOut").onclick=function(){setType("out")};
+  $("bIn").onclick=function(){setType("in")};
+
+  $("amount").addEventListener("input",function(){
+    var v=this.value.replace(/\D/g,"");
+    this.value=v?Number(v).toLocaleString("id-ID"):"";
+  });
+
+  $("date").value=today();
+  $("month").value=today().slice(0,7);
+  $("month").onchange=render;
+
+  $("save").onclick=function(){
+    var amt=Number($("amount").value.replace(/\D/g,""));
+    if(!amt){$("amount").focus();return}
+    var d=$("date").value||today();
+    txs.push({id:Date.now()+Math.random(),type:type,amount:amt,cat:$("cat").value,note:$("note").value.trim(),date:d});
+    persist();
+    $("amount").value="";$("note").value="";
+    $("month").value=d.slice(0,7);
+    render();
+  };
+
+  $("reset").onclick=function(){
+    if(confirm("Hapus semua catatan? Tindakan ini tidak bisa dibatalkan.")){txs=[];persist();render()}
+  };
+
+  function esc(s){return s.replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+  function dayLabel(s){
+    var d=new Date(s+"T00:00:00");
+    var t=today();
+    var base=d.toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long"});
+    return s===t?"Hari ini, "+base:base;
+  }
+
+  function render(){
+    var m=$("month").value;
+    var list=txs.filter(function(t){return t.date.slice(0,7)===m});
+    var tin=0,tout=0;
+    list.forEach(function(t){if(t.type==="in")tin+=t.amount;else tout+=t.amount});
+    var sal=tin-tout;
+    $("saldo").textContent=(sal<0?"−":"")+rp(sal);
+    $("tin").textContent=rp(tin);
+    $("tout").textContent=rp(tout);
+
+    if(!list.length){
+      $("list").innerHTML='<div class="empty">Belum ada catatan di bulan ini. Isi jumlah di atas lalu simpan.</div>';
+      return;
+    }
+    var groups={};
+    list.forEach(function(t){(groups[t.date]=groups[t.date]||[]).push(t)});
+    var html=Object.keys(groups).sort().reverse().map(function(d){
+      var net=groups[d].reduce(function(a,t){return a+(t.type==="in"?t.amount:-t.amount)},0);
+      var items=groups[d].slice().reverse().map(function(t){
+        var c=t.type==="in"?"var(--in)":"var(--out)";
+        return '<div class="item"><span class="dot" style="background:'+c+'"></span>'+
+          '<div class="t"><b>'+esc(t.cat)+'</b>'+(t.note?'<span>'+esc(t.note)+'</span>':'')+'</div>'+
+          '<span class="amt" style="color:'+c+'">'+(t.type==="in"?"+":"−")+rp(t.amount)+'</span>'+
+          '<button class="del" data-id="'+t.id+'" aria-label="Hapus catatan">×</button></div>';
+      }).join("");
+      return '<div class="day"><div class="dayhead"><span>'+dayLabel(d)+'</span><span>'+(net<0?"−":"")+rp(net)+'</span></div>'+items+'</div>';
+    }).join("");
+    $("list").innerHTML=html;
+  }
+
+  $("list").addEventListener("click",function(e){
+    var b=e.target.closest(".del");
+    if(!b)return;
+    var id=b.getAttribute("data-id");
+    txs=txs.filter(function(t){return String(t.id)!==id});
+    persist();render();
+  });
+
+  try{
+    var cv=document.createElement("canvas");cv.width=cv.height=180;
+    var cx=cv.getContext("2d");cx.fillStyle="#16232D";cx.fillRect(0,0,180,180);
+    cx.font="100px serif";cx.textAlign="center";cx.textBaseline="middle";cx.fillText("💰",90,98);
+    var ic=document.createElement("link");ic.rel="apple-touch-icon";ic.href=cv.toDataURL("image/png");
+    document.head.appendChild(ic);
+  }catch(e){}
+  setType("out");
+  render();
+})();
+</script>
+</body>
+</html>
